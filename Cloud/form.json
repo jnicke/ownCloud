@@ -258,6 +258,11 @@
                             "value": "xx-large"
                         }
 					]
+				},				
+				{ 
+					"name": "debug",
+					"type": "CheckBox", 
+					"caption": "Debug Ausgabe" 
 				}
 	],
 	"actions":

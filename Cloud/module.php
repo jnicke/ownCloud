@@ -1,5 +1,4 @@
 <?
-
 class IPSownCloud extends IPSModule{
 
 	public function Create(){
@@ -17,7 +16,7 @@ class IPSownCloud extends IPSModule{
 		$this->RegisterPropertyString("Style12", "normal");
 		$this->RegisterPropertyString("Style13", "normal");
 		$this->RegisterPropertyString("Style14", "normal");
-
+		$this->RegisterPropertyBoolean("debug", false);
 	}
 
 	public function ApplyChanges(){
@@ -119,11 +118,12 @@ class IPSownCloud extends IPSModule{
 		$pass 	 =  $this->ReadPropertyString('Password');
 		$maxdays =  $this->ReadPropertyInteger('MaxDays');
 		$bland 	 =  $this->ReadPropertyString('Feiertage');
+		$debug   =  $this->ReadPropertyBoolean('debug');
 
-		$calcData = $this->ReadCalendar($url, $kid, $user, $pass, false, $maxdays, $bland);
+		$calcData = $this->ReadCalendar($url, $kid, $user, $pass, $debug, $maxdays, $bland);
 		if ($calcData != false)
 		{
-			$this->erzeugeKalender($calcData, $StyleText, $bland);
+			$this->erzeugeKalender($calcData, $StyleText, $bland, $debug);
 		}
 
 	}
@@ -184,6 +184,7 @@ class IPSownCloud extends IPSModule{
 					$thisData['EndDatum'] = '';
 					$thisData['EndZeitTxt'] = '';
 					$thisData['EndDatumTxt'] = '';
+					$thisData['Wiederholungen'] = '';
 					$thisData['RRuleFreq'] = '';
 					$thisData['RRuleInterval'] = '';
 					$thisData['RRuleEnd'] = '';
@@ -381,7 +382,7 @@ class IPSownCloud extends IPSModule{
 				if ($Data['RRuleFreq'] == 'täglich') $day = strtotime("+".$interval." day",$day);
 				if ($Data['RRuleFreq'] == 'wöchentlich') $day = strtotime("+".($interval * 7)." day",$day);
 				if ($Data['RRuleFreq'] == 'monatlich') $day = strtotime("+".$interval." month",$day);
-				if ($Data['RRuleFreq'] == 'jährlich') $day = strtotime("+".$interval." year",$day);
+				if ($Data['RRuleFreq'] == 'jährlich')  $day = strtotime("+".$interval." year",$day);
 			}
 		}
 
@@ -423,6 +424,7 @@ class IPSownCloud extends IPSModule{
 
 		// Termin mit zeitlich unbegrenzte Wiederholungen
 		elseif  ($Data['RRuleFreq'] <> '' && $Data['RRuleEnd'] == '' && $Data['RRuleCount'] == ''){
+			$jahre = 0;
 			$day = $Data['Datum'];
 			$interval = $Data['RRuleInterval'];
 			if($interval == "") $interval = 1;
@@ -452,7 +454,7 @@ class IPSownCloud extends IPSModule{
 				if ($Data['RRuleFreq'] == 'täglich') $day = strtotime("+".$interval." day",$day);
 				if ($Data['RRuleFreq'] == 'wöchentlich') $day = strtotime("+".($interval * 7)." day",$day);
 				if ($Data['RRuleFreq'] == 'monatlich') $day = strtotime("+".$interval." month",$day);
-				if ($Data['RRuleFreq'] == 'jährlich') $day = strtotime("+".$interval." year",$day);
+				if ($Data['RRuleFreq'] == 'jährlich') { $day = strtotime("+".$interval." year",$day); $jahre++; $Data['Wiederholungen'] = $jahre;}
 			} while ( ( $day <= strtotime(date("d.m.Y",time()))) || ( $day <= strtotime("+$maxdays day")) );
 		}
 
@@ -486,6 +488,16 @@ class IPSownCloud extends IPSModule{
 //
 /*****************************************************************/
 	private function erzeugeKalender($calcData, $StyleText, $bland){
+		
+		// Wochentage in Deutsch
+		$tag = array();
+		$tag[0] = "Sonntag";
+		$tag[1] = "Montag";
+		$tag[2] = "Dienstag";
+		$tag[3] = "Mittwoch";
+		$tag[4] = "Donnerstag";
+		$tag[5] = "Freitag";
+		$tag[6] = "Samstag";
 
 		$heute = "";
 		$morgen = "";
@@ -496,16 +508,6 @@ class IPSownCloud extends IPSModule{
 		$calDataTxt = "";
 		$emailID =  $this->ReadPropertyInteger('EmailID');
 		
-		// Wochentage in Deutsch
-		$tag[0] = "Sonntag";
-		$tag[1] = "Montag";
-		$tag[2] = "Dienstag";
-		$tag[3] = "Mittwoch";
-		$tag[4] = "Donnerstag";
-		$tag[5] = "Freitag";
-		$tag[6] = "Samstag";
-
-
 		if (count($calcData) > 0){
 			usort($calcData, array($this,'DateCompare'));
 		
@@ -514,7 +516,7 @@ class IPSownCloud extends IPSModule{
 						."\n\t<tr>"
 						."\n\t\t<td>"
 						."\n\t\t</td>"
-						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V 1.01"
+						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V 1.02"
 						."\n\t\t</td>"
 						."\n\t</tr>";
 			$check_date = "";
@@ -625,7 +627,7 @@ class IPSownCloud extends IPSModule{
 						}
 						$check_date = $thisData['DatumTxt'];
 					}
-					$calDataTxt .= $this->SetEintrag($thisData, $StyleText);
+					$calDataTxt .= $this->SetEintrag($thisData, $StyleText, $tag);
 				}
 			}
 			
@@ -652,7 +654,8 @@ class IPSownCloud extends IPSModule{
 //
 //
 /*****************************************************************/
-	private function SetEintrag($thisData, $StyleText){
+	private function SetEintrag($thisData, $StyleText, $tag){
+
 
 		if($thisData['ZeitTxt'] == "00:00"){
 	        if($thisData['DatumTxt'] == $thisData['EndDatumTxt']) $thisData['ZeitTxt']="Ganzt&aumlgig";
@@ -668,11 +671,14 @@ class IPSownCloud extends IPSModule{
 			}
 		}
 
+		$jahre = "";
+		if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
+		
 		if($thisData['DatumTxt'] == date("d.m.Y"))
 		{
 	        return "\n\t\t\t\t<tr>"
 					."\n\t\t\t\t\t<td>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[14]."; color:".$StyleText[4]."'>".$thisData['Bezeichnung']
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[14]."; color:".$StyleText[4]."'>".$thisData['Bezeichnung'].$jahre
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t\t<td style='text-align:right;'>"
@@ -684,7 +690,7 @@ class IPSownCloud extends IPSModule{
 	    else{
 	        return "\n\t\t\t\t<tr>"
 					."\n\t\t\t\t\t<td>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[13].";color:".$StyleText[3]."'>".$thisData['Bezeichnung']
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[13].";color:".$StyleText[3]."'>".$thisData['Bezeichnung'].$jahre
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t\t<td style='text-align:right'>"
@@ -756,7 +762,7 @@ class IPSownCloud extends IPSModule{
 		$pos3	= strpos($format, 'Y');
 
 		$begin	= explode($sep,$begin);
-		$end		= explode($sep,$end);
+		$end	= explode($sep,$end);
 
 		$first 	= GregorianToJD($end[$pos2],$end[$pos1],$end[$pos3]);
 		$second	= GregorianToJD($begin[$pos2],$begin[$pos1],$begin[$pos3]);
@@ -831,7 +837,6 @@ class IPSownCloud extends IPSModule{
 
 		foreach($Fdays as $value) {
 			list($key, $value) = each($Fdays);
-
 			if ($date == $value) $return = $key;
 		}
 		return $return;
