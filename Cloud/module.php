@@ -4,7 +4,7 @@ class IPSownCloud extends IPSModule{
 
 	public function Create(){
 		parent::Create();
-        $this->RegisterPropertyString("URL", "");
+		$this->RegisterPropertyString("URL", "");
         $this->RegisterPropertyInteger("KalenderID", 0);
         $this->RegisterPropertyString("Username", "");
         $this->RegisterPropertyString("Password", "");
@@ -65,91 +65,18 @@ class IPSownCloud extends IPSModule{
 		// Variablen anlegen
 		$this->RegisterVariableString("Heute",            "Heute",            "", 10);
 		$this->RegisterVariableString("Morgen",           "Morgen",           "", 20);
-		$this->RegisterVariableString("Uebermorgen",      "Uebermorgen",      "", 30);
-		$this->RegisterVariableString("Ueberuebermorgen", "Ueberuebermorgen", "", 40);
+		$this->RegisterVariableString("Uebermorgen",      "Übermorgen",      "", 30);
+		$this->RegisterVariableString("Ueberuebermorgen", "Überübermorgen", "", 40);
 		$this->RegisterVariableString("HeuteMorgen",      "Heute & Morgen",   "", 50);
-		$this->RegisterVariableString("NaechsteTermine",  "Naechste Termine", "", 60);
+		$this->RegisterVariableString("NaechsteTermine",  "Nächste Termine", "", 60);
 		$this->RegisterVariableString("Kalender",         "Kalender",         "~HTMLBox", 100);
 
 
 		// 1 Minuten Timer
-		try{
-			$this->RegisterTimer("Timer", 60, 'OWN_Update($_IPS[\'TARGET\']);');
-		} catch (Exception $exc){
-			trigger_error($exc->getMessage(), $exc->getCode());
-			return;
-		}
+        	$this->RegisterTimer("Timer", 60*1000, 'OWN_Update($_IPS[\'TARGET\']);');
 		// Nach übernahme der Einstellungen oder IPS-Neustart einmal Update durchführen.
 		$this->Update();
 	}
-
-    protected function RegisterTimer($Name, $Interval, $Script){
-        $id = @IPS_GetObjectIDByIdent($Name, $this->InstanceID);
-        if ($id === false)
-            $id = 0;
-
-        if ($id > 0){
-            if (!IPS_EventExists($id))
-                throw new Exception("Ident with name " . $Name . " is used for wrong object type", E_USER_WARNING);
-
-            if (IPS_GetEvent($id)['EventType'] <> 1){
-                IPS_DeleteEvent($id);
-                $id = 0;
-            }
-        }
-
-        if ($id == 0){
-            $id = IPS_CreateEvent(1);
-            IPS_SetParent($id, $this->InstanceID);
-            IPS_SetIdent($id, $Name);
-        }
-        IPS_SetName($id, $Name);
-        IPS_SetHidden($id, true);
-        IPS_SetEventScript($id, $Script);
-        if ($Interval > 0){
-            IPS_SetEventCyclic($id, 0, 0, 0, 0, 1, $Interval);
-            IPS_SetEventActive($id, true);
-        } else{
-            IPS_SetEventCyclic($id, 0, 0, 0, 0, 1, 1);
-            IPS_SetEventActive($id, false);
-        }
-    }
-
-    protected function UnregisterTimer($Name){
-        $id = @IPS_GetObjectIDByIdent($Name, $this->InstanceID);
-        if ($id > 0){
-            if (!IPS_EventExists($id))
-                throw new Exception('Timer not present', E_USER_NOTICE);
-            IPS_DeleteEvent($id);
-        }
-    }
-
-    protected function SetTimerInterval($Name, $Interval){
-        $id = @IPS_GetObjectIDByIdent($Name, $this->InstanceID);
-        if ($id === false)
-            throw new Exception('Timer not present', E_USER_WARNING);
-        if (!IPS_EventExists($id))
-            throw new Exception('Timer not present', E_USER_WARNING);
-
-        $Event = IPS_GetEvent($id);
-
-        if ($Interval < 1){
-            if ($Event['EventActive'])
-                IPS_SetEventActive($id, false);
-        }
-        else{
-            if ($Event['CyclicTimeValue'] <> $Interval)
-                IPS_SetEventCyclic($id, 0, 0, 0, 0, 1, $Interval);
-            if (!$Event['EventActive'])
-                IPS_SetEventActive($id, true);
-        }
-    }
-
-    private function SetValueInteger($Ident, $value){
-        $id = $this->GetIDForIdent($Ident);
-        if (GetValueInteger($id) <> $value)
-            SetValueInteger($id, $value);
-    }
 
     private function SetValueString($Ident, $value){
         $id = $this->GetIDForIdent($Ident);
@@ -193,14 +120,11 @@ class IPSownCloud extends IPSModule{
 		$maxdays =  $this->ReadPropertyInteger('MaxDays');
 		$bland 	 =  $this->ReadPropertyString('Feiertage');
 
-		try{
-			$calcData = $this->ReadCalendar($url, $kid, $user, $pass, false, $maxdays, $bland);
+		$calcData = $this->ReadCalendar($url, $kid, $user, $pass, false, $maxdays, $bland);
+		if ($calcData != false)
+		{
 			$this->erzeugeKalender($calcData, $StyleText, $bland);
 		}
-		catch(Exception $exc){
-			IPS_LogMessage("ownCloud-Modul", "Error");
-		}
-
 
 	}
 
@@ -227,7 +151,8 @@ class IPSownCloud extends IPSModule{
 		curl_setopt ($ch, CURLOPT_USERPWD, $username.':'.$password);
 		$result = curl_exec ($ch);
 		curl_close($ch);
-
+                if ($result === false)
+                    return false;
 		if(substr($result,0,15) == "BEGIN:VCALENDAR"){
 			$kalender_arr_komplett = explode("BEGIN:VEVENT", $result);
 			$insert = 0;
@@ -411,6 +336,7 @@ class IPSownCloud extends IPSModule{
 		}
 		else{
 			if ($debug == true) IPS_LogMessage("ownCloud-Modul", "Keine Sinnvollen Daten von ownCloud erhalten\n\n".$url."/index.php/apps/calendar/export.php?calid=".$id."\n".$result."\n");
+                        return false;
 		}
 	}
 
@@ -588,7 +514,7 @@ class IPSownCloud extends IPSModule{
 						."\n\t<tr>"
 						."\n\t\t<td>"
 						."\n\t\t</td>"
-						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V 1.00"
+						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V 1.01"
 						."\n\t\t</td>"
 						."\n\t</tr>";
 			$check_date = "";
