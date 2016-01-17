@@ -1,0 +1,11 @@
+{
+	"id": "{136103EF-9DAA-44EB-8CD6-54260471ADDB}",
+	"name": "IPSownCloud",
+	"type": 3,
+	"vendor": "MCS-51",
+	"aliases": [ "ownCloud" ],
+	"parentRequirements": [],
+	"childRequirements": [],
+	"implemented": [],
+	"prefix": "OWN"
+}
