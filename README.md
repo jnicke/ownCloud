@@ -22,16 +22,22 @@ Dieses Modul erzeugt eine Wecker Instance.
  
 ## 3. Installation
 
-   - IPS 4.x  
+	- IPS 4.x  
         über das 'Modul Control' folgende URL hinzufügen:  
         `https://github.com/MCS-51/ownCloud.git`  
 
 
 ## 4. Funktionsreferenz
 	
-	GH_Update( integer $InstanceID );
+	OWN_Update( integer $InstanceID );
 
-	Startet eine neue Abfrage.
+	Startet eine neue Abfrage des Kalenders.
+	
+	OWN_ModulSelfUpdate(integer $InstanceID );
+	
+	Wenn eine neuere Version des Moduls vorliegt, wird diese geladen.
+	Diese Funktion kann auch automatisch bei jedem Kalender Update erfolgen.
+	Einstellbar über die Instanz.
 
 
 ## 5. Anhang
@@ -42,3 +48,14 @@ Dieses Modul erzeugt eine Wecker Instance.
 **Changelog:**  
  Version 1.0:
   - Erstes Release
+ 
+ Version 1.1:
+  - Neu: Modul kann sich automatisch selbst updaten.
+  - Neu: Wenn neuere Version vorhanden ist und automatisches Update aus, wird ein Hinweis im HTML Kalender angezeigt.
+  - Neu: Wenn neuere Version vorhanden ist und automatisches Update aus, wird eine Variable auf true gesetzt.
+  - Neu: Externes Script für Modifizierung des Titel, UserEvent und ReminderEvent.
+  - Neu: Bei jährlichen Wiederholungen, wird die Anzahl der Wiederholungen hinter dem Termin angezeigt. (s. i. d. R. Geburtstage)
+  - Neu: Variable nächster Termin jetzt mit Anzeige Datum und Uhrzeit
+  - Fix: Variablen für Termine (ausser Kalender) werden auf ~TextBox gesetzt. Damit funktioniert auch der Zeilenumbruch
+  - Fix: Wiederholungen täglich, wöchentlich, monatlich wurden nicht korrekt ausgewertet.
+  

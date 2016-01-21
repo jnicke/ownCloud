@@ -22,7 +22,7 @@
                 },
                 {
                     "name": "Password",
-                    "type": "ValidationTextBox",
+                    "type": "PasswordTextBox",
                     "caption": "Passwort"
                 },
                 {
@@ -260,6 +260,11 @@
 					]
 				},				
 				{ 
+					"name": "autoupdate",
+					"type": "CheckBox", 
+					"caption": "Modul bei neuer Version automatisch updaten" 
+				},
+				{ 
 					"name": "debug",
 					"type": "CheckBox", 
 					"caption": "Debug Ausgabe" 
@@ -268,6 +273,7 @@
 	"actions":
 	[
 		{ "type": "Button", "label": "Update", "onClick": "OWN_Update($id);" }
+		,{ "type": "Button", "label": "ModulUpdate", "onClick": "OWN_ModulSelfUpdate($id);" }
 	],
 	"status":
 	[

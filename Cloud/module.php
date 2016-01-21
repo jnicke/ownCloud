@@ -1,6 +1,11 @@
 <?
 class IPSownCloud extends IPSModule{
 
+	public $calcData = Array();
+	public $StyleText = Array();
+	public $debug = false;
+	public $EigenerModulName = Array('IPSModul_owncloud', 'ownCloud');
+	
 	public function Create(){
 		parent::Create();
 		$this->RegisterPropertyString("URL", "");
@@ -16,13 +21,14 @@ class IPSownCloud extends IPSModule{
 		$this->RegisterPropertyString("Style12", "normal");
 		$this->RegisterPropertyString("Style13", "normal");
 		$this->RegisterPropertyString("Style14", "normal");
+		$this->RegisterPropertyBoolean("autoupdate", false);
 		$this->RegisterPropertyBoolean("debug", false);
 	}
 
 	public function ApplyChanges(){
 		//Never delete this line!
 		parent::ApplyChanges();
-
+	
 		$url  =  $this->ReadPropertyString('URL');
 		$kid  =  $this->ReadPropertyString('KalenderID');
 		$user =  $this->ReadPropertyString('Username');
@@ -62,13 +68,53 @@ class IPSownCloud extends IPSModule{
 		}
 
 		// Variablen anlegen
-		$this->RegisterVariableString("Heute",            "Heute",            "", 10);
-		$this->RegisterVariableString("Morgen",           "Morgen",           "", 20);
-		$this->RegisterVariableString("Uebermorgen",      "Übermorgen",      "", 30);
-		$this->RegisterVariableString("Ueberuebermorgen", "Überübermorgen", "", 40);
-		$this->RegisterVariableString("HeuteMorgen",      "Heute & Morgen",   "", 50);
-		$this->RegisterVariableString("NaechsteTermine",  "Nächste Termine", "", 60);
-		$this->RegisterVariableString("Kalender",         "Kalender",         "~HTMLBox", 100);
+		$this->RegisterVariableString("Heute",            "Heute",           "~TextBox", 10);
+		$this->RegisterVariableString("Morgen",           "Morgen",          "~TextBox", 20);
+		$this->RegisterVariableString("Uebermorgen",      "Übermorgen",      "~TextBox", 30);
+		$this->RegisterVariableString("Ueberuebermorgen", "Überübermorgen",  "~TextBox", 40);
+		$this->RegisterVariableString("HeuteMorgen",      "Heute & Morgen",  "~TextBox", 50);
+		$this->RegisterVariableString("NaechsteTermine",  "Nächste Termine", "~TextBox", 60);
+		$this->RegisterVariableString("Kalender",         "Kalender",        "~HTMLBox", 100);
+		$this->RegisterVariableBoolean("NeuesUpdate", "Neues Update vorhanden",        "", 200);
+		$this->RegisterScript("UserAktion", "User Aktions Script",
+'<?
+/*****************************************************************/
+//
+// Modifiziert den TerminTitel bei Bedarf
+//
+/*****************************************************************/
+	function ModifyTitle($Titel)
+	{
+		return $Titel;
+	}
+
+/*****************************************************************/
+//
+// Löst den Befehl aus, der über die Befehl übergeben wurde.
+// Auslösung erfolgt zum Zeitpunkt des Termins.
+//
+/*****************************************************************/
+	function UserEvent($Befehl, $Titel)
+	{
+		IPS_LogMessage("ownCloud-Modul", "UserEvent: ".$Befehl." von ".$Titel);
+
+		ob_start();
+		eval($Befehl);
+		ob_get_clean();
+	}
+		
+/*****************************************************************/
+//
+// Funktion wird zum Zeitpunkt der Erinnerung ausgelöst.
+// Email Versand erfolgt unabhängig davon.
+//
+/*****************************************************************/
+	function ReminderEvent($Titel)
+	{
+		IPS_LogMessage("ownCloud-Modul", "ReminderEvent: ".$Titel);
+
+	}
+?>', 200);
 
 
 		// 1 Minuten Timer
@@ -83,47 +129,100 @@ class IPSownCloud extends IPSModule{
             SetValueString($id, $value);
     }
 
+    private function SetValueBoolean($Ident, $value){
+        $id = $this->GetIDForIdent($Ident);
+        if (GetValueBoolean($id) <> $value)
+            SetValueBoolean($id, $value);
+    }
 
+	public function ModulSelfUpdate(){
+		$ModulInstanzID = IPS_GetInstanceListByModuleID("{B8A5067A-AFC2-3798-FEDC-BCD02A45615E}")[0];
+
+		// Nach Updates für alle Module suchen (bis auf die Ausnahmen)
+		$result = MC_GetModuleList($ModulInstanzID);
+		foreach ($result as $Modulname)
+		{
+		   if (in_array($Modulname, $this->EigenerModulName) === true)
+			{
+				$ModulInfoAR = (@MC_GetModuleRepositoryInfo($ModulInstanzID, $Modulname));
+				if ($ModulInfoAR["ModuleLocalCommit"] <> $ModulInfoAR["ModuleRemoteCommit"])
+				{
+					MC_UpdateModule($ModulInstanzID, $Modulname);
+					IPS_LogMessage("ownCloud-Modul", "Modul -$Modulname- wurde aktualisiert!");
+					$this->SetValueBoolean("NeuesUpdate", false);
+				}
+			}
+		}
+	}
+	
+	private function UpdateInfo(){
+		$ret = "";
+		$ModulInstanzID = IPS_GetInstanceListByModuleID("{B8A5067A-AFC2-3798-FEDC-BCD02A45615E}")[0];
+
+		// Nach Updates für alle Module suchen (bis auf die Ausnahmen)
+		$result = MC_GetModuleList($ModulInstanzID);
+		foreach ($result as $Modulname)
+		{
+			if (in_array($Modulname, $this->EigenerModulName) === true)
+			{
+				$ModulInfoAR = (@MC_GetModuleRepositoryInfo($ModulInstanzID, $Modulname));
+				if ($ModulInfoAR["ModuleLocalCommit"] <> $ModulInfoAR["ModuleRemoteCommit"])
+				{
+					$ret = "Eine neue Version ist verf&uumlgbar";
+					IPS_LogMessage("ownCloud-Modul", "Eine neue Version ist verfügbar!");
+					$this->SetValueBoolean("NeuesUpdate", true);
+				}else {
+					$this->SetValueBoolean("NeuesUpdate", false);
+				}
+			}
+		}
+		return $ret;
+	}
+
+	
     public function Update(){
 
-		$StyleText[0]  = $this->ReadPropertyBoolean('visualreminder');              // (true/false) Anzeige der Erinnerung Ein/Aus
+		if ($this->ReadPropertyBoolean('autoupdate') == true) $this->ModulSelfUpdate();
+	
+		$this->StyleText[0] = $this->ReadPropertyBoolean('visualreminder');              // (true/false) Anzeige der Erinnerung Ein/Aus
 		
 		/******** Farbnamen, RGB-Formatierung, Hex-Zahlen müglich *********/
-		$StyleText[1] = "lightgray"; 			// Textfarbe Datum
-		$StyleText[2] = "gray"; 				// Textfarbe Wochentag
-		$StyleText[3] = "lightblue";  			// Textfarbe Termin sonstige
-		$StyleText[4] = "red"; 					// Textfarbe Termin Heute
-		$StyleText[5] = "rgba(31,50,79,0)";    	// Texthintergrung Heute default: rgba(31,50,79,0)
-		$StyleText[6] = "lightgreen";			// Textfarbe Datum wenn Feiertag
+		$this->StyleText[1] = "lightgray"; 			// Textfarbe Datum
+		$this->StyleText[2] = "gray"; 				// Textfarbe Wochentag
+		$this->StyleText[3] = "lightblue";  			// Textfarbe Termin sonstige
+		$this->StyleText[4] = "red"; 					// Textfarbe Termin Heute
+		$this->StyleText[5] = "rgba(31,50,79,0)";    	// Texthintergrung Heute default: rgba(31,50,79,0)
+		$this->StyleText[6] = "lightgreen";			// Textfarbe Datum wenn Feiertag
 
-		$StyleText[7] = "#213245";    			// Verlaufsfarbe rechts
-		$StyleText[8] = "100%";       			// übergang rechts
-		$StyleText[9] = "rgba(31,50,79,0)"; 	// Verlaufsfarbe links
-		$StyleText[10] = "40%";        			// üergang links
+		$this->StyleText[7] = "#213245";    			// Verlaufsfarbe rechts
+		$this->StyleText[8] = "100%";       			// übergang rechts
+		$this->StyleText[9] = "rgba(31,50,79,0)"; 	// Verlaufsfarbe links
+		$this->StyleText[10] = "40%";        			// üergang links
 
 		/*** xx-small, x-small, small, normal, large, x-large, xx-large ***/
 		/************** oder Angabe in pt - z.B. "12pt" *******************/
-		$StyleText[11] = $this->ReadPropertyString('Style11'); 				// Textgrösse Datum
-		$StyleText[12] = $this->ReadPropertyString('Style12'); 				// Textgrösse Wochentag
-		$StyleText[13] = $this->ReadPropertyString('Style13'); 				// Textgrösse Eintrag
-		$StyleText[14] = $this->ReadPropertyString('Style14'); 			// Textgrösse Heutiger Eintrag  AB V1.07
+		$this->StyleText[11] = $this->ReadPropertyString('Style11'); 				// Textgrösse Datum
+		$this->StyleText[12] = $this->ReadPropertyString('Style12'); 				// Textgrösse Wochentag
+		$this->StyleText[13] = $this->ReadPropertyString('Style13'); 				// Textgrösse Eintrag
+		$this->StyleText[14] = $this->ReadPropertyString('Style14'); 			// Textgrösse Heutiger Eintrag  AB V1.07
 
-		$StyleText[20] = "font-family: Arial;"; // Style der Tabelle Änderbar AB V1.08
+		$this->StyleText[20] = "font-family: Arial;"; // Style der Tabelle Änderbar AB V1.08
 		
-		$StyleText[30]  = $this->ReadPropertyBoolean('visualoldtimes');              // Sollen abgelaufene Termine von Heute angezeigt werden false = Termine nach Endzeit, werden nicht mehr angezeigt AB V1.07
+		$this->StyleText[30]  = $this->ReadPropertyBoolean('visualoldtimes');              // Sollen abgelaufene Termine von Heute angezeigt werden false = Termine nach Endzeit, werden nicht mehr angezeigt AB V1.07
 
 		$url     =  $this->ReadPropertyString('URL');
 		$kid     =  $this->ReadPropertyString('KalenderID');
 		$user    =  $this->ReadPropertyString('Username');
 		$pass 	 =  $this->ReadPropertyString('Password');
 		$maxdays =  $this->ReadPropertyInteger('MaxDays');
-		$bland 	 =  $this->ReadPropertyString('Feiertage');
-		$debug   =  $this->ReadPropertyBoolean('debug');
+		
+		$this->debug   =  $this->ReadPropertyBoolean('debug');
 
-		$calcData = $this->ReadCalendar($url, $kid, $user, $pass, $debug, $maxdays, $bland);
-		if ($calcData != false)
+		$this->calcData = array();
+		
+		if ($this->ReadCalendar($url, $kid, $user, $pass, $maxdays) != false)
 		{
-			$this->erzeugeKalender($calcData, $StyleText, $bland, $debug);
+			$this->erzeugeKalender();
 		}
 
 	}
@@ -136,9 +235,10 @@ class IPSownCloud extends IPSModule{
 // Erzeugung der Wiederholungen in Unterroutine
 //
 /*****************************************************************/
-	private function ReadCalendar($url, $id, $username, $password, $debug, $maxdays, $bland){
+	private function ReadCalendar($url, $id, $username, $password, $maxdays){
 
-		$calcData= array('');
+		$kscript = $this->GetIDForIdent("UserAktion");
+		include IPS_GetKernelDir().'scripts/'."$kscript.ips.php";
 
 		$ch = curl_init();
 		curl_setopt ($ch, CURLOPT_URL, $url."/index.php/apps/calendar/export.php?calid=".$id);
@@ -151,8 +251,8 @@ class IPSownCloud extends IPSModule{
 		curl_setopt ($ch, CURLOPT_USERPWD, $username.':'.$password);
 		$result = curl_exec ($ch);
 		curl_close($ch);
-                if ($result === false)
-                    return false;
+		if ($result === false) return false;
+		
 		if(substr($result,0,15) == "BEGIN:VCALENDAR"){
 			$kalender_arr_komplett = explode("BEGIN:VEVENT", $result);
 			$insert = 0;
@@ -162,15 +262,6 @@ class IPSownCloud extends IPSModule{
 					$sresult = explode("\r\n", $value);
 					$startTime = '';
 					$endTime = '';
-					$reminderTime = -1;
-					$rruleFreq = '';
-					$rruleCount = '';
-					$rruleEnd = '';
-					$rruleEndtxt = '';
-					$rruleDays = '';
-					$rruleMonth = '';
-					$rruleMonthDay = '';
-					$rruleIntervall = '';
 					$alarmData = false;
 					$rettemp = array('');
 					$thisData = '';
@@ -198,7 +289,7 @@ class IPSownCloud extends IPSModule{
 					$thisData['ReminderDateTxt'] = array('');
 					$thisData['ReminderTrigger'] = array('');
 
-					if ($debug) IPS_LogMessage("ownCloud-Modul", "T:$key\n");
+					if ($this->debug) IPS_LogMessage("ownCloud-Modul", "T:$key\n");
 					foreach($sresult as $svalue){
 						if ($svalue <> ""){
 							if ($svalue == "BEGIN:VALARM") $alarmData = true;
@@ -211,7 +302,7 @@ class IPSownCloud extends IPSModule{
 									if ($i > 1) $title .= ":";
 									$title.= $xvalue[$i];
 								}
-								$thisData['Bezeichnung'] = iconv('UTF-8','ISO-8859-15', $title);
+								$thisData['Bezeichnung'] = iconv('UTF-8','ISO-8859-15', ModifyTitle($title));
 							}
 							
 							if ($xvalue[0] == "LOCATION"){
@@ -258,15 +349,15 @@ class IPSownCloud extends IPSModule{
 								$rrule = explode(';',$xvalue[1]);
 								foreach($rrule as $xrule){
 									$srule = explode('=',$xrule);
-									if ($xrule == "FREQ=DAILY")    $rruleFreq = "täglich";
-									if ($xrule == "FREQ=WEEKLY")   $rruleFreq = "wöchentlich";
-									if ($xrule == "FREQ=MONTHLY")  $rruleFreq = "monatlich";
-									if ($xrule == "FREQ=YEARLY")   $rruleFreq = "jährlich";
+									if ($xrule == "FREQ=DAILY")    $thisData['RRuleFreq'] = "täglich";
+									if ($xrule == "FREQ=WEEKLY")   $thisData['RRuleFreq'] = "wöchentlich";
+									if ($xrule == "FREQ=MONTHLY")  $thisData['RRuleFreq'] = "monatlich";
+									if ($xrule == "FREQ=YEARLY")   $thisData['RRuleFreq'] = "jährlich";
 
-									if ($srule[0] == "COUNT")      $rruleCount = $srule[1];
-									if ($srule[0] == "BYDAY")      $rruleDays = $srule[1];
-									if ($srule[0] == "BYMONTH")    $rruleMonth = $srule[1];
-									if ($srule[0] == "BYMONTHDAY") $rruleMonthDay = $srule[1];
+									if ($srule[0] == "COUNT")      $thisData['RRuleCount'] 	  = $srule[1];
+									if ($srule[0] == "BYDAY")      $thisData['RRuleDays']     = $srule[1];
+									if ($srule[0] == "BYMONTH")    $thisData['RRuleMonth'] 	  = $srule[1];
+									if ($srule[0] == "BYMONTHDAY") $thisData['RRuleMonthDay'] = $srule[1];
 									if ($srule[0] == "INTERVAL")   $thisData['RRuleInterval'] = $srule[1];
 									if ($srule[0] == "UNTIL"){
 										$ryear = substr($xrule,6,4);
@@ -274,8 +365,8 @@ class IPSownCloud extends IPSModule{
 										$rday = substr($xrule,12,2);
 										$rhour = substr($xrule,15,2);
 										$rminute = substr($xrule,17,2);
-										$rruleEnd  = strtotime( "$rday.$rmonth.$ryear" );
-										$rruleEndtxt = "$rday.$rmonth.$ryear";
+										$thisData['RRuleEnd']  = strtotime( "$rday.$rmonth.$ryear" );
+										$thisData['RRuleEndTxt'] = "$rday.$rmonth.$ryear";
 									}
 								}
 							}
@@ -304,11 +395,11 @@ class IPSownCloud extends IPSModule{
 					$thisData['DatumTxt'] = date("d.m.Y", $startTime);
 
 					if ($endTime>0){
-						$thisData['EndDatum'] = $endTime;
-						$thisData['EndZeitTxt'] = date("H:i", $endTime);
-						$thisData['EndDatumTxt'] = date("d.m.Y", $endTime);
+						$thisData['EndDatum'] 		= $endTime;
+						$thisData['EndZeitTxt'] 	= date("H:i", $endTime);
+						$thisData['EndDatumTxt']	= date("d.m.Y", $endTime);
 						if($thisData['ZeitTxt'] == "00:00" && $thisData['EndZeitTxt'] == "00:00"){
-							$thisData['EndDatum'] = $endTime - 86400;
+							$thisData['EndDatum'] 	= $endTime - 86400;
 							$thisData['EndDatumTxt'] = date("d.m.Y", strtotime($thisData['EndDatumTxt']."-1 day"));
 						}
 					}
@@ -317,27 +408,21 @@ class IPSownCloud extends IPSModule{
 						$thisData['EndZeitTxt'] = '';
 						$thisData['EndDatumTxt'] = '';
 					}
-					$thisData['RRuleFreq'] = $rruleFreq;
-					$thisData['RRuleEnd'] = $rruleEnd;
-					$thisData['RRuleEndTxt'] = $rruleEndtxt;
-					$thisData['RRuleCount'] = $rruleCount;
-					$thisData['RRuleDays'] = $rruleDays;
-					$thisData['RRuleMonth'] = $rruleMonth;
-					$thisData['RRuleMonthDay'] = $rruleMonthDay;
 					
-					$rettemp = $this->CheckWiederholungen($thisData, $maxdays);
-					if (count($rettemp) >= 2){
-						$calcData[$insert] = $rettemp;
-						$rettemp= "";
-						$insert++;
-					}						
+					if ($thisData['Ort'] == "UserEvent"){
+						  $thisData['UserEvent'] = substr($thisData['Beschreibung'],0,strpos($thisData['Beschreibung'],";") + 1);
+						  $thisData['UserEvent'] = str_replace("\;",";",$thisData['UserEvent']);
+						  $thisData['UserEvent'] = str_replace("\,",",",$thisData['UserEvent']);
+					}
+					
+					$this->CheckWiederholungen($thisData, $maxdays);
 				}
 			}
-			return $calcData;
+			return true;
 		}
 		else{
-			if ($debug == true) IPS_LogMessage("ownCloud-Modul", "Keine Sinnvollen Daten von ownCloud erhalten\n\n".$url."/index.php/apps/calendar/export.php?calid=".$id."\n".$result."\n");
-                        return false;
+			if ($this->debug == true) IPS_LogMessage("ownCloud-Modul", "Keine Sinnvollen Daten von ownCloud erhalten\n\n".$url."/index.php/apps/calendar/export.php?calid=".$id."\n".$result."\n");
+            return false;
 		}
 	}
 
@@ -352,13 +437,14 @@ class IPSownCloud extends IPSModule{
 /*****************************************************************/
    private function CheckWiederholungen($Data, $maxdays)
    {
-		$return = array('');
+		
         // Termin mit Enddatum begrenzte Wiederholungen
 		if ($Data['RRuleFreq'] <> '' && $Data['RRuleEnd'] <> '' && $Data['RRuleCount'] == ''){
-			$day = $Data['Datum'];
+			$jahre = 0;
+			$day = strtotime($Data['DatumTxt']);			
+			if($Data['RRuleInterval'] == "") $Data['RRuleInterval'] = 1;
 			$interval = $Data['RRuleInterval'];
-			if($interval == "") $interval = 1;
-			$rend = strtotime($Data['RRuleEndTxt']);
+			$rend = $Data['RRuleEnd'];
 			while ($rend >= $day){
 				if (($Data['RRuleDays'] == '') || (strpos($Data['RRuleDays'],$this->formatTag(date("D", $day))) !== false )){
 			        $Data['DatumTxt'] = date("d.m.Y", $day);
@@ -376,21 +462,22 @@ class IPSownCloud extends IPSModule{
 								$remindercount++;
 							}
 						}
-						$return = $Data;
+						$this->calcData[] = $Data;
 					}
 				}
 				if ($Data['RRuleFreq'] == 'täglich') $day = strtotime("+".$interval." day",$day);
 				if ($Data['RRuleFreq'] == 'wöchentlich') $day = strtotime("+".($interval * 7)." day",$day);
 				if ($Data['RRuleFreq'] == 'monatlich') $day = strtotime("+".$interval." month",$day);
-				if ($Data['RRuleFreq'] == 'jährlich')  $day = strtotime("+".$interval." year",$day);
+				if ($Data['RRuleFreq'] == 'jährlich') { $day = strtotime("+".$interval." year",$day); $jahre = $jahre + $interval; $Data['Wiederholungen'] = $jahre;}
 			}
 		}
 
 		// Termin mit Anzahl begrenzte Wiederholungen
 		elseif ($Data['RRuleFreq'] <> '' && $Data['RRuleEnd'] == '' && $Data['RRuleCount'] <> ''){
-			$day = $Data['Datum'];
+			$jahre = 0;
+			$day = strtotime($Data['DatumTxt']);
+			if($Data['RRuleInterval'] == "") $Data['RRuleInterval'] = 1;
 			$interval = $Data['RRuleInterval'];
-			if($interval == "") $interval = 1;
 			$count = 0;
 			while ($count < $Data['RRuleCount']){
 				if (($Data['RRuleDays'] == '') || (strpos($Data['RRuleDays'],$this->formatTag(date("D", $day))) !== false ))
@@ -411,13 +498,13 @@ class IPSownCloud extends IPSModule{
 								$remindercount++;
 							}
 						}
-						$return = $Data;
+						$this->calcData[] = $Data;
 					}
 				}
 				if ($Data['RRuleFreq'] == 'täglich') $day = strtotime("+".$interval." day",$day);
 				if ($Data['RRuleFreq'] == 'wöchentlich') $day = strtotime("+".($interval * 7)." day",$day);
 				if ($Data['RRuleFreq'] == 'monatlich') $day = strtotime("+".$interval." month",$day);
-				if ($Data['RRuleFreq'] == 'jährlich') $day = strtotime("+".$interval." year",$day);
+				if ($Data['RRuleFreq'] == 'jährlich') { $day = strtotime("+".$interval." year",$day); $jahre = $jahre + $interval; $Data['Wiederholungen'] = $jahre;}
 				$count++;
 			}
 		}
@@ -425,9 +512,9 @@ class IPSownCloud extends IPSModule{
 		// Termin mit zeitlich unbegrenzte Wiederholungen
 		elseif  ($Data['RRuleFreq'] <> '' && $Data['RRuleEnd'] == '' && $Data['RRuleCount'] == ''){
 			$jahre = 0;
-			$day = $Data['Datum'];
+			$day = strtotime($Data['DatumTxt']);
+			if($Data['RRuleInterval'] == "") $Data['RRuleInterval'] = 1;
 			$interval = $Data['RRuleInterval'];
-			if($interval == "") $interval = 1;
 			do{
 				if (($Data['RRuleDays'] == '') || (strpos($Data['RRuleDays'],$this->formatTag(date("D", $day))) !== false )){
 					$Data['DatumTxt'] = date("d.m.Y", $day);
@@ -448,16 +535,15 @@ class IPSownCloud extends IPSModule{
 								$remindercount++;
 							}
 						}
-						$return = $Data;
+						$this->calcData[] = $Data;
 					}
 				}
 				if ($Data['RRuleFreq'] == 'täglich') $day = strtotime("+".$interval." day",$day);
 				if ($Data['RRuleFreq'] == 'wöchentlich') $day = strtotime("+".($interval * 7)." day",$day);
 				if ($Data['RRuleFreq'] == 'monatlich') $day = strtotime("+".$interval." month",$day);
-				if ($Data['RRuleFreq'] == 'jährlich') { $day = strtotime("+".$interval." year",$day); $jahre++; $Data['Wiederholungen'] = $jahre;}
+				if ($Data['RRuleFreq'] == 'jährlich') { $day = strtotime("+".$interval." year",$day); $jahre = $jahre + $interval; $Data['Wiederholungen'] = $jahre;}
 			} while ( ( $day <= strtotime(date("d.m.Y",time()))) || ( $day <= strtotime("+$maxdays day")) );
 		}
-
 		// Termin ohne Wiederholungen
 		else{
 			if (( $Data['Datum'] >= strtotime(date("d.m.Y"))) && ( $Data['Datum'] <= strtotime("+$maxdays day"))){
@@ -472,10 +558,9 @@ class IPSownCloud extends IPSModule{
 						$remindercount++;
 					}
 				}
-				$return = $Data;
+				$this->calcData[] = $Data;
 			}
 		}
-		return $return;
 	}
 
 /*****************************************************************/
@@ -487,7 +572,7 @@ class IPSownCloud extends IPSModule{
 // Erinnerungszeitpunkte werden entsprechend mit geführt
 //
 /*****************************************************************/
-	private function erzeugeKalender($calcData, $StyleText, $bland){
+	private function erzeugeKalender(){
 		
 		// Wochentage in Deutsch
 		$tag = array();
@@ -508,23 +593,29 @@ class IPSownCloud extends IPSModule{
 		$calDataTxt = "";
 		$emailID =  $this->ReadPropertyInteger('EmailID');
 		
-		if (count($calcData) > 0){
-			usort($calcData, array($this,'DateCompare'));
-		
+		if (count($this->calcData) > 0){
+			usort($this->calcData, array($this,'DateCompare'));
 			// Starte Tabellenansicht
-			$calDataTxt = "<table style='border-spacing:0px; width:100%; ".$StyleText[20]."'>"
+			$calDataTxt = "<table style='border-spacing:0px; width:100%; ".$this->StyleText[20]."'>"
 						."\n\t<tr>"
-						."\n\t\t<td>"
-						."\n\t\t</td>"
-						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V 1.02"
+						."\n\t\t<td style='text-align:center; font-size:small;color:#ff0000;'>";
+			$calDataTxt .= $this->UpdateInfo();
+			$calDataTxt .= "\n\t\t</td>"
+						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V1.13"
 						."\n\t\t</td>"
 						."\n\t</tr>";
 			$check_date = "";
-			$debugCount = 0;
-			foreach($calcData as $thisData){
-				
-				// Email Versand bei Erinnerungszeit
+			$this->debugCount = 0;
+
+			foreach($this->calcData as $thisData){
 				foreach($thisData['ReminderDateTxt'] as $no => $reminderZeit){
+					// ReminderEvent auslösen
+					if( ($reminderZeit <> "") ){
+						if  ($reminderZeit == date("d.m.Y H:i", time())){
+							ReminderEvent($thisData['Bezeichnung']);
+						}
+					}
+					// Email Versand bei Erinnerungszeit
 					if( ($emailID > 0) &&  ($reminderZeit <> "") ){
 						if  ($reminderZeit == date("d.m.Y H:i", time())){
 							SMTP_SendMail($emailID, "Termin Erinnerung für ".$thisData['Bezeichnung'], "       Datum: ".$thisData['DatumTxt']."\n\r     Uhrzeit: ".$thisData['ZeitTxt']."\n\r Bezeichnung: ".$thisData['Bezeichnung']."\n\rBeschreibung: ".$thisData['Beschreibung']."\n\r");
@@ -534,52 +625,63 @@ class IPSownCloud extends IPSModule{
 
 				// UserEvent ausführen
 				if  ( ($thisData['DatumTxt']." ".$thisData['ZeitTxt'] == date("d.m.Y H:i", time())) && ($thisData['UserEvent'] <> "") ){
-//						UserEvent($thisData['UserEvent']);
+						UserEvent($thisData['UserEvent'], $thisData['Bezeichnung'] );
 				}
 
 				// Variable Heute füllen
-				if( ( $thisData['DatumTxt'] == date("d.m.Y", time())  && $StyleText[30] == true ) ||
-					(	$thisData['EndDatum'] >= strtotime(date("d.m.Y H:i", time())) && $thisData['EndDatum'] < strtotime(date("d.m.Y 23:59:59", time()))&& $StyleText[30] == false )){
+				if( ( $thisData['DatumTxt'] == date("d.m.Y", time())  && $this->StyleText[30] == true ) ||
+					(	$thisData['EndDatum'] >= strtotime(date("d.m.Y H:i", time())) && $thisData['EndDatum'] < strtotime(date("d.m.Y 23:59:59", time()))&& $this->StyleText[30] == false )){
+						$jahre = "";
+						if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
+
 						if ($heute == ""){
-							$heute = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+							$heute = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 						}else{
-							$heute = $heute.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+							$heute = $heute.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 						}
 				}
 
 				// Variable Morgen füllen
 				if($thisData['DatumTxt'] == date("d.m.Y", time() + (24 * 60 * 60))){
+					$jahre = "";
+					if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
 					if ($morgen == ""){
-						$morgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$morgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}else{
-						$morgen = $morgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$morgen = $morgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}
 				}
 
 				// Variable übermorgen füllen
 				if($thisData['DatumTxt'] == date("d.m.Y", time()+(2 * 24 * 60 * 60))){
+					$jahre = "";
+					if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
 					if ($uemorgen == ""){
-						$uemorgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$uemorgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}else{
-						$uemorgen = $uemorgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$uemorgen = $uemorgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}
 				}
 
 				// Variable überübermorgen füllen
 				if($thisData['DatumTxt'] == date("d.m.Y", time()+(3 * 24 * 60 * 60))){
+					$jahre = "";
+					if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
 					if ($ueuemorgen == ""){
-						$ueuemorgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$ueuemorgen = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}else{
-						$ueuemorgen = $ueuemorgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'];
+						$ueuemorgen = $ueuemorgen.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}
 				}
 
 				// Variable Next füllen
 				if(strtotime($thisData['DatumTxt']) >= strtotime(date("d.m.Y", time() + (2*24 * 60 * 60)))){
+					$jahre = "";
+					if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
 					if ($next == ""){
-						$next = $thisData['Bezeichnung'];
+						$next = $thisData['DatumTxt']." ".$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}else{
-						$next = $next.chr(13).chr(10).$thisData['Bezeichnung'];
+						$next = $next.chr(13).chr(10).$thisData['DatumTxt']." ".$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
 					}
 				}
 
@@ -587,8 +689,8 @@ class IPSownCloud extends IPSModule{
 				if ($heute == "") { $heuteumorgen = $morgen; } else { $heuteumorgen = $heute.chr(13).chr(10).$morgen; }
 
 				// Variable Kalender füllen
-				if(((strtotime($thisData['EndDatumTxt']) >= strtotime(date("d.m.Y", time()))) && $StyleText[30] == true ) ||
-					($thisData['EndDatum'] >= strtotime(date("d.m.Y H:i", time())) && $StyleText[30] == false )){ //date("d.m.Y", strtotime("yesterday")))
+				if(((strtotime($thisData['EndDatumTxt']) >= strtotime(date("d.m.Y", time()))) && $this->StyleText[30] == true ) ||
+					($thisData['EndDatum'] >= strtotime(date("d.m.Y H:i", time())) && $this->StyleText[30] == false )){ //date("d.m.Y", strtotime("yesterday")))
 					if($check_date != "" and $thisData['DatumTxt'] != $check_date)$calDataTxt .= "\n\t\t\t</table>\n\t\t</th>\n\t</tr>";
 					if($thisData['DatumTxt'] != $check_date){
 						if     ($thisData['DatumTxt'] == date("d.m.Y")) $headerTxt = "Heute:";
@@ -596,24 +698,24 @@ class IPSownCloud extends IPSModule{
 						else    $headerTxt = $thisData['DatumTxt']." in ".$this->seDay($thisData['DatumTxt'],date("d.m.Y"),"dmY",".")." Tagen";
 						$calDataTxt  .= "\n"
 									."\n\t<tr>\n\t\t<td style=' padding:4px;"
-									."\n\t\t\t\t\tbackground-color:".$StyleText[7].";"
-									."\n\t\t\t\t\tbackground: -moz-linear-gradient(left, ".$StyleText[9]." ".$StyleText[10].", ".$StyleText[7]." ".$StyleText[8].");"
-									."\n\t\t\t\t\tbackground: -webkit-gradient(linear, left top, right top, color-stop(4%,".$StyleText[9]."), color-stop(".$StyleText[8].",".$StyleText[7]."));"
-									."\n\t\t\t\t\tbackground: -webkit-linear-gradient(left, ".$StyleText[9]." ".$StyleText[10].", ".$StyleText[7]." ".$StyleText[8].");"
-									."\n\t\t\t\t\tbackground: -o-linear-gradient(left, ".$StyleText[9]." ".$StyleText[10].", ".$StyleText[7]." ".$StyleText[8].");"
-									."\n\t\t\t\t\tbackground: -ms-linear-gradient(left, ".$StyleText[9]." ".$StyleText[10].", ".$StyleText[7]." ".$StyleText[8].");"
-									."\n\t\t\t\t\tbackground: linear-gradient(to right, ".$StyleText[9]." ".$StyleText[10]."), ".$StyleText[7]." ".$StyleText[8].";'>";
+									."\n\t\t\t\t\tbackground-color:".$this->StyleText[7].";"
+									."\n\t\t\t\t\tbackground: -moz-linear-gradient(left, ".$this->StyleText[9]." ".$this->StyleText[10].", ".$this->StyleText[7]." ".$this->StyleText[8].");"
+									."\n\t\t\t\t\tbackground: -webkit-gradient(linear, left top, right top, color-stop(4%,".$this->StyleText[9]."), color-stop(".$this->StyleText[8].",".$this->StyleText[7]."));"
+									."\n\t\t\t\t\tbackground: -webkit-linear-gradient(left, ".$this->StyleText[9]." ".$this->StyleText[10].", ".$this->StyleText[7]." ".$this->StyleText[8].");"
+									."\n\t\t\t\t\tbackground: -o-linear-gradient(left, ".$this->StyleText[9]." ".$this->StyleText[10].", ".$this->StyleText[7]." ".$this->StyleText[8].");"
+									."\n\t\t\t\t\tbackground: -ms-linear-gradient(left, ".$this->StyleText[9]." ".$this->StyleText[10].", ".$this->StyleText[7]." ".$this->StyleText[8].");"
+									."\n\t\t\t\t\tbackground: linear-gradient(to right, ".$this->StyleText[9]." ".$this->StyleText[10]."), ".$this->StyleText[7]." ".$this->StyleText[8].";'>";
 
-						$feiertag = $this->get_Feiertag(strtotime($thisData['DatumTxt']), $bland);
+						$feiertag = $this->get_Feiertag(strtotime($thisData['DatumTxt']));
 						if ($feiertag <> ""){
-							$calDataTxt  .= "\n\t\t\t\t<span style='color:".$StyleText[6].";font-weight:200;font-size:".$StyleText[11]."'>".$headerTxt." ( $feiertag )";
+							$calDataTxt  .= "\n\t\t\t\t<span style='color:".$this->StyleText[6].";font-weight:200;font-size:".$this->StyleText[11]."'>".$headerTxt." ( $feiertag )";
 						}else{
-							$calDataTxt  .= "\n\t\t\t\t<span style='color:".$StyleText[1].";font-weight:200;font-size:".$StyleText[11]."'>".$headerTxt;
+							$calDataTxt  .= "\n\t\t\t\t<span style='color:".$this->StyleText[1].";font-weight:200;font-size:".$this->StyleText[11]."'>".$headerTxt;
 						}
 
 						$calDataTxt .= "\n\t\t\t\t</span>\n\t\t</td>"
-									."\n\t\t<td style=' text-align:right; width:100px; padding:4px;background-color:".$StyleText[7]."'>"
-									."\n\t\t\t\t<span style='color:".$StyleText[2].";font-weight:normal;font-size:".$StyleText[12]."'>".$tag[date("w", strtotime($thisData['DatumTxt']))]
+									."\n\t\t<td style=' text-align:right; width:100px; padding:4px;background-color:".$this->StyleText[7]."'>"
+									."\n\t\t\t\t<span style='color:".$this->StyleText[2].";font-weight:normal;font-size:".$this->StyleText[12]."'>".$tag[date("w", strtotime($thisData['DatumTxt']))]
 									."\n\t\t\t\t</span>"
 									."\n\t\t</td>"
 									."\n\t</tr>"
@@ -621,16 +723,16 @@ class IPSownCloud extends IPSModule{
 									."\n\t\t<th colspan='2' style='text-align:left; padding-left:20px; padding-right:0px; padding-bottom:10px; padding-top:0px;'>";
 						
 						if($thisData['DatumTxt'] == date("d.m.Y")){
-							$calDataTxt  .= "\n\t\t\t<table style='border-spacing:0px; width:100%; padding:5px; border:1px solid #1f3247; background-color: ".$StyleText[5]."; '>";
+							$calDataTxt  .= "\n\t\t\t<table style='border-spacing:0px; width:100%; padding:5px; border:1px solid #1f3247; background-color: ".$this->StyleText[5]."; '>";
 						}else{
-							$calDataTxt  .= "\n\t\t\t<table style='border-spacing:0px; width:100%; padding:5px; border:1px solid #1f3247; background-color: ".$StyleText[9]."; '>";
+							$calDataTxt  .= "\n\t\t\t<table style='border-spacing:0px; width:100%; padding:5px; border:1px solid #1f3247; background-color: ".$this->StyleText[9]."; '>";
 						}
 						$check_date = $thisData['DatumTxt'];
 					}
-					$calDataTxt .= $this->SetEintrag($thisData, $StyleText, $tag);
+					$calDataTxt .= $this->SetEintrag($thisData, $tag);
+//					$calDataTxt .= $this->SetEintrag($thisData, $this->StyleText, $tag);
 				}
-			}
-			
+			}				
 			$calDataTxt .= "\n\t\t</table>"
 						."\n\t\t</th>"
 						."\n\t</tr>"
@@ -643,7 +745,6 @@ class IPSownCloud extends IPSModule{
 			$this->SetValueString("HeuteMorgen", $heuteumorgen);
 			$this->SetValueString("NaechsteTermine", $next);
 			$this->SetValueString("Kalender", $calDataTxt);
-
 		}
 	}
 
@@ -654,8 +755,8 @@ class IPSownCloud extends IPSModule{
 //
 //
 /*****************************************************************/
-	private function SetEintrag($thisData, $StyleText, $tag){
-
+	private function SetEintrag($thisData, $tag){
+//	private function SetEintrag($thisData, $this->StyleText, $tag){
 
 		if($thisData['ZeitTxt'] == "00:00"){
 	        if($thisData['DatumTxt'] == $thisData['EndDatumTxt']) $thisData['ZeitTxt']="Ganzt&aumlgig";
@@ -663,7 +764,7 @@ class IPSownCloud extends IPSModule{
 		}
 
 		$remind = "";
-		if ($StyleText[0]){
+		if ($this->StyleText[0]){
 			foreach($thisData['ReminderTimeTxt'] as $no => $Datum){
 				if (($Datum <> "") && ($no == 0)) $remind .= "(".$Datum;
 				if (($Datum <> "") && ($no  > 0)) $remind .= ", ".$Datum;
@@ -678,11 +779,11 @@ class IPSownCloud extends IPSModule{
 		{
 	        return "\n\t\t\t\t<tr>"
 					."\n\t\t\t\t\t<td>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[14]."; color:".$StyleText[4]."'>".$thisData['Bezeichnung'].$jahre
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$this->StyleText[14]."; color:".$this->StyleText[4]."'>".$thisData['Bezeichnung'].$jahre
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t\t<td style='text-align:right;'>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[14]."; color:".$StyleText[4]."'>".$remind.$thisData['ZeitTxt']
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$this->StyleText[14]."; color:".$this->StyleText[4]."'>".$remind.$thisData['ZeitTxt']
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t</tr>";
@@ -690,11 +791,11 @@ class IPSownCloud extends IPSModule{
 	    else{
 	        return "\n\t\t\t\t<tr>"
 					."\n\t\t\t\t\t<td>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[13].";color:".$StyleText[3]."'>".$thisData['Bezeichnung'].$jahre
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$this->StyleText[13].";color:".$this->StyleText[3]."'>".$thisData['Bezeichnung'].$jahre
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t\t<td style='text-align:right'>"
-					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$StyleText[13].";color:".$StyleText[3]."'>".$remind.$thisData['ZeitTxt']
+					."\n\t\t\t\t\t\t<span style='font-weight:normal;font-size:".$this->StyleText[13].";color:".$this->StyleText[3]."'>".$remind.$thisData['ZeitTxt']
 					."\n\t\t\t\t\t\t</span>"
 					."\n\t\t\t\t\t</td>"
 					."\n\t\t\t\t</tr>";
@@ -808,20 +909,6 @@ class IPSownCloud extends IPSModule{
 
 /*****************************************************************/
 //
-// Loste den Befehl aus der über die Variable übergeben wurde.
-//
-/*****************************************************************/
-	private function UserEvent($value)
-	{
-		IPS_LogMessage("ownCloud-Modul", "UserEvent: $value");
-
-		ob_start();
-		eval($value);
-		ob_get_clean();
-	}
-
-/*****************************************************************/
-//
 // Prüfen ob der gewählte Tage ein Feiertag ist
 // Übergabe: zu prüfenden Tag
 // Rückgabe: true = Feiertage; false = kein Feiertag
@@ -829,9 +916,9 @@ class IPSownCloud extends IPSModule{
 // Routine nicht von mir aber angepasst
 //
 /*****************************************************************/
-	private function get_Feiertag( $date, $bland){
+	private function get_Feiertag( $date){
 		if ($date == "") $date = mktime(0,0,0,date("m"),date("d"),date("y"));
-		$Fdays = $this->getHolidays(Date('Y', $date), $bland);
+		$Fdays = $this->getHolidays(Date('Y', $date));
 		$return = "";
 		if ( $Fdays == "") return;
 
@@ -865,8 +952,9 @@ class IPSownCloud extends IPSModule{
 // Routine nicht von mir
 //
 /*****************************************************************/
-	private function getHolidays($year, $bland) {
+	private function getHolidays($year) {
 
+		$bland = $this->ReadPropertyString('Feiertage');
 		if ( $bland == "--") return "";		// Feiertage abgeschaltet
 		
 		$time = $this->getEasterSundayTime($year);
