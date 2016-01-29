@@ -6,9 +6,13 @@ class IPSownCloud extends IPSModule{
 	public $debug = false;
 	public $EigenerModulName = Array('IPSModul_owncloud', 'ownCloud');
 	
+/*****************************************************************/
+//
+//
+/*****************************************************************/
 	public function Create(){
 		parent::Create();
-		$this->RegisterPropertyString("URL", "");
+        $this->RegisterPropertyString("URL", "");
         $this->RegisterPropertyInteger("KalenderID", 0);
         $this->RegisterPropertyString("Username", "");
         $this->RegisterPropertyString("Password", "");
@@ -23,16 +27,21 @@ class IPSownCloud extends IPSModule{
 		$this->RegisterPropertyString("Style14", "normal");
 		$this->RegisterPropertyBoolean("autoupdate", false);
 		$this->RegisterPropertyBoolean("debug", false);
+		$this->RegisterPropertyBoolean("Logging", false);
 	}
 
+/*****************************************************************/
+//
+//
+/*****************************************************************/
 	public function ApplyChanges(){
 		//Never delete this line!
 		parent::ApplyChanges();
 	
-		$url  =  $this->ReadPropertyString('URL');
-		$kid  =  $this->ReadPropertyString('KalenderID');
-		$user =  $this->ReadPropertyString('Username');
-		$pass =  $this->ReadPropertyString('Password');
+		$url  	 =  $this->ReadPropertyString('URL');
+		$kid  	 =  $this->ReadPropertyString('KalenderID');
+		$user 	 =  $this->ReadPropertyString('Username');
+		$pass 	 =  $this->ReadPropertyString('Password');
 		$maxdays =  $this->ReadPropertyInteger('MaxDays');
 
         // Url prüfen
@@ -68,15 +77,17 @@ class IPSownCloud extends IPSModule{
 		}
 
 		// Variablen anlegen
-		$this->RegisterVariableString("Heute",            "Heute",           "~TextBox", 10);
-		$this->RegisterVariableString("Morgen",           "Morgen",          "~TextBox", 20);
-		$this->RegisterVariableString("Uebermorgen",      "Übermorgen",      "~TextBox", 30);
-		$this->RegisterVariableString("Ueberuebermorgen", "Überübermorgen",  "~TextBox", 40);
-		$this->RegisterVariableString("HeuteMorgen",      "Heute & Morgen",  "~TextBox", 50);
-		$this->RegisterVariableString("NaechsteTermine",  "Nächste Termine", "~TextBox", 60);
-		$this->RegisterVariableString("Kalender",         "Kalender",        "~HTMLBox", 100);
-		$this->RegisterVariableBoolean("NeuesUpdate", "Neues Update vorhanden",        "", 200);
-		$this->RegisterScript("UserAktion", "User Aktions Script",
+		$this->RegisterVariableString("Heute"			, "Heute"					, "~TextBox"	, 10);
+		$this->RegisterVariableString("Morgen"			, "Morgen"					, "~TextBox"	, 20);
+		$this->RegisterVariableString("Uebermorgen"		, "Übermorgen"				, "~TextBox"	, 30);
+		$this->RegisterVariableString("Ueberuebermorgen", "Überübermorgen"			, "~TextBox"	, 40);
+		$this->RegisterVariableString("HeuteMorgen"		, "Heute & Morgen"			, "~TextBox"	, 50);
+		$this->RegisterVariableString("NaechsteTermine"	, "Nächste Termine"			, "~TextBox"	, 60);
+		$this->RegisterVariableString("Kalender"		, "Kalender"				, "~HTMLBox"	, 100);
+		$this->RegisterVariableBoolean("NeuesUpdate"	, "Neues Update vorhanden"	, ""			, 200);
+		$this->RegisterVariableBoolean("Urlaub"			, "Heute Urlaub"			, ""			, 210);
+		$this->RegisterVariableString("Wecken"			, "Heute"					, "~TextBox"	, 10);
+		$this->RegisterScript("UserAktion"				, "User Aktions Script"		,
 '<?
 /*****************************************************************/
 //
@@ -114,27 +125,40 @@ class IPSownCloud extends IPSModule{
 		IPS_LogMessage("ownCloud-Modul", "ReminderEvent: ".$Titel);
 
 	}
-?>', 200);
-
+?>', 300);
+		IPS_SetHidden($this->GetIDForIdent('UserAktion'), true);
 
 		// 1 Minuten Timer
-        	$this->RegisterTimer("Timer", 60*1000, 'OWN_Update($_IPS[\'TARGET\']);');
+       	$this->RegisterTimer("Timer", 60*1000, 'OWN_Update($_IPS[\'TARGET\']);');
+
 		// Nach übernahme der Einstellungen oder IPS-Neustart einmal Update durchführen.
 		$this->Update();
 	}
 
+/*****************************************************************/
+//
+//
+/*****************************************************************/
     private function SetValueString($Ident, $value){
         $id = $this->GetIDForIdent($Ident);
         if (GetValueString($id) <> $value)
             SetValueString($id, $value);
     }
 
+/*****************************************************************/
+//
+//
+/*****************************************************************/
     private function SetValueBoolean($Ident, $value){
         $id = $this->GetIDForIdent($Ident);
         if (GetValueBoolean($id) <> $value)
             SetValueBoolean($id, $value);
     }
 
+/*****************************************************************/
+//
+//
+/*****************************************************************/
 	public function ModulSelfUpdate(){
 		$ModulInstanzID = IPS_GetInstanceListByModuleID("{B8A5067A-AFC2-3798-FEDC-BCD02A45615E}")[0];
 
@@ -149,12 +173,17 @@ class IPSownCloud extends IPSModule{
 				{
 					MC_UpdateModule($ModulInstanzID, $Modulname);
 					IPS_LogMessage("ownCloud-Modul", "Modul -$Modulname- wurde aktualisiert!");
+					$this->Logging("Modul -$Modulname- wurde aktualisiert!");
 					$this->SetValueBoolean("NeuesUpdate", false);
 				}
 			}
 		}
 	}
-	
+
+/*****************************************************************/
+//
+//
+/*****************************************************************/
 	private function UpdateInfo(){
 		$ret = "";
 		$ModulInstanzID = IPS_GetInstanceListByModuleID("{B8A5067A-AFC2-3798-FEDC-BCD02A45615E}")[0];
@@ -170,6 +199,7 @@ class IPSownCloud extends IPSModule{
 				{
 					$ret = "Eine neue Version ist verf&uumlgbar";
 					IPS_LogMessage("ownCloud-Modul", "Eine neue Version ist verfügbar!");
+					$this->Logging("Eine neue Version ist verfügbar!");
 					$this->SetValueBoolean("NeuesUpdate", true);
 				}else {
 					$this->SetValueBoolean("NeuesUpdate", false);
@@ -180,6 +210,10 @@ class IPSownCloud extends IPSModule{
 	}
 
 	
+/*****************************************************************/
+//
+//
+/*****************************************************************/
     public function Update(){
 
 		if ($this->ReadPropertyBoolean('autoupdate') == true) $this->ModulSelfUpdate();
@@ -214,15 +248,17 @@ class IPSownCloud extends IPSModule{
 		$kid     =  $this->ReadPropertyString('KalenderID');
 		$user    =  $this->ReadPropertyString('Username');
 		$pass 	 =  $this->ReadPropertyString('Password');
-		$maxdays =  $this->ReadPropertyInteger('MaxDays');
-		
+				
 		$this->debug   =  $this->ReadPropertyBoolean('debug');
 
 		$this->calcData = array();
 		
-		if ($this->ReadCalendar($url, $kid, $user, $pass, $maxdays) != false)
-		{
+		if ($this->ReadCalendar($url, $kid, $user, $pass) != false){
 			$this->erzeugeKalender();
+			$this->Logging("--------  Ende  --------");
+		}
+		else {
+			$this->Logging("Kalender für den angegebenen Zeitbereich ist leer.");
 		}
 
 	}
@@ -235,7 +271,9 @@ class IPSownCloud extends IPSModule{
 // Erzeugung der Wiederholungen in Unterroutine
 //
 /*****************************************************************/
-	private function ReadCalendar($url, $id, $username, $password, $maxdays){
+	private function ReadCalendar($url, $id, $username, $password){
+
+		$this->Logging("********  Kalender: $id / User: $username  ********");
 
 		$kscript = $this->GetIDForIdent("UserAktion");
 		include IPS_GetKernelDir().'scripts/'."$kscript.ips.php";
@@ -256,6 +294,7 @@ class IPSownCloud extends IPSModule{
 		if(substr($result,0,15) == "BEGIN:VCALENDAR"){
 			$kalender_arr_komplett = explode("BEGIN:VEVENT", $result);
 			$insert = 0;
+			$this->Logging("Kalender erfolgreich gelesen.");
 			foreach($kalender_arr_komplett as $key => $value){
 				$reminderCount = 0;
 				if (($value <> "") && ($key > 0)){ // Leere Einträge filtern						
@@ -296,7 +335,7 @@ class IPSownCloud extends IPSModule{
 							if ($svalue == "END:VALARM") $alarmData = false;
 							$xvalue = explode(':',$svalue);
 
-							if ($xvalue[0] == "SUMMARY"){
+							if (substr($xvalue[0],0,7) == "SUMMARY"){
 								$title = "";
 								for($i = 1; $i < (count($xvalue) ); $i++){
 									if ($i > 1) $title .= ":";
@@ -415,13 +454,16 @@ class IPSownCloud extends IPSModule{
 						  $thisData['UserEvent'] = str_replace("\,",",",$thisData['UserEvent']);
 					}
 					
-					$this->CheckWiederholungen($thisData, $maxdays);
+					$this->CheckWiederholungen($thisData);
 				}
 			}
+			$this->Logging("Kalender Auswertung beendet");
 			return true;
 		}
 		else{
 			if ($this->debug == true) IPS_LogMessage("ownCloud-Modul", "Keine Sinnvollen Daten von ownCloud erhalten\n\n".$url."/index.php/apps/calendar/export.php?calid=".$id."\n".$result."\n");
+			$this->Logging("Keine Sinnvollen Daten von ownCloud erhalten.\n".$url."/index.php/apps/calendar/export.php?calid=".$id);
+
             return false;
 		}
 	}
@@ -435,8 +477,10 @@ class IPSownCloud extends IPSModule{
 // Erinnerungszeitpunkte werden entsprechend mit geführt
 //
 /*****************************************************************/
-   private function CheckWiederholungen($Data, $maxdays)
+   private function CheckWiederholungen($Data)
    {
+	   
+		$maxdays =  $this->ReadPropertyInteger('MaxDays');
 		
         // Termin mit Enddatum begrenzte Wiederholungen
 		if ($Data['RRuleFreq'] <> '' && $Data['RRuleEnd'] <> '' && $Data['RRuleCount'] == ''){
@@ -574,6 +618,8 @@ class IPSownCloud extends IPSModule{
 /*****************************************************************/
 	private function erzeugeKalender(){
 		
+		$this->Logging("Erzeuge Kalender Einträge");
+
 		// Wochentage in Deutsch
 		$tag = array();
 		$tag[0] = "Sonntag";
@@ -584,6 +630,7 @@ class IPSownCloud extends IPSModule{
 		$tag[5] = "Freitag";
 		$tag[6] = "Samstag";
 
+		$urlaub = false;
 		$heute = "";
 		$morgen = "";
 		$uemorgen = "";
@@ -601,24 +648,28 @@ class IPSownCloud extends IPSModule{
 						."\n\t\t<td style='text-align:center; font-size:small;color:#ff0000;'>";
 			$calDataTxt .= $this->UpdateInfo();
 			$calDataTxt .= "\n\t\t</td>"
-						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V1.13"
+						."\n\t\t<td style='text-align:right; font-size:xx-small;'>ownCloud Modul V1.14"
 						."\n\t\t</td>"
 						."\n\t</tr>";
 			$check_date = "";
 			$this->debugCount = 0;
 
 			foreach($this->calcData as $thisData){
+
+				// Alle Erinnerungen durchpflügen
 				foreach($thisData['ReminderDateTxt'] as $no => $reminderZeit){
 					// ReminderEvent auslösen
 					if( ($reminderZeit <> "") ){
 						if  ($reminderZeit == date("d.m.Y H:i", time())){
 							ReminderEvent($thisData['Bezeichnung']);
+							$this->Logging("Reminder Event ausgeführt. Termin: ".$thisData['Bezeichnung']);
 						}
 					}
 					// Email Versand bei Erinnerungszeit
 					if( ($emailID > 0) &&  ($reminderZeit <> "") ){
 						if  ($reminderZeit == date("d.m.Y H:i", time())){
 							SMTP_SendMail($emailID, "Termin Erinnerung für ".$thisData['Bezeichnung'], "       Datum: ".$thisData['DatumTxt']."\n\r     Uhrzeit: ".$thisData['ZeitTxt']."\n\r Bezeichnung: ".$thisData['Bezeichnung']."\n\rBeschreibung: ".$thisData['Beschreibung']."\n\r");
+							$this->Logging("Email aufgrund eines Event versendet. Termin: ".$thisData['Bezeichnung']);
 						}
 					}
 				}
@@ -628,17 +679,23 @@ class IPSownCloud extends IPSModule{
 						UserEvent($thisData['UserEvent'], $thisData['Bezeichnung'] );
 				}
 
+				// Urlaubstrigger setzen/löschen
+				if ( ($thisData['DatumTxt'] == date("d.m.Y", time()) ) && (substr($thisData['Bezeichnung'],0,6 ) == "Urlaub") ){
+					$urlaub = true;
+				}
+
+
 				// Variable Heute füllen
 				if( ( $thisData['DatumTxt'] == date("d.m.Y", time())  && $this->StyleText[30] == true ) ||
 					(	$thisData['EndDatum'] >= strtotime(date("d.m.Y H:i", time())) && $thisData['EndDatum'] < strtotime(date("d.m.Y 23:59:59", time()))&& $this->StyleText[30] == false )){
-						$jahre = "";
-						if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
+					$jahre = "";
+					if ($thisData['Wiederholungen'] > 0) $jahre = " (".$thisData['Wiederholungen']."J)";
 
-						if ($heute == ""){
-							$heute = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
-						}else{
-							$heute = $heute.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
-						}
+					if ($heute == ""){
+						$heute = $thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
+					}else{
+						$heute = $heute.chr(13).chr(10).$thisData['ZeitTxt']." ".$thisData['Bezeichnung'].$jahre;
+					}
 				}
 
 				// Variable Morgen füllen
@@ -730,7 +787,8 @@ class IPSownCloud extends IPSModule{
 						$check_date = $thisData['DatumTxt'];
 					}
 					$calDataTxt .= $this->SetEintrag($thisData, $tag);
-//					$calDataTxt .= $this->SetEintrag($thisData, $this->StyleText, $tag);
+//					$this->Logging("~~~~~~~~  Variable: thisData  ~~~~~~~~");
+//					$this->Logging( print_r($thisData, true) );
 				}
 			}				
 			$calDataTxt .= "\n\t\t</table>"
@@ -745,6 +803,11 @@ class IPSownCloud extends IPSModule{
 			$this->SetValueString("HeuteMorgen", $heuteumorgen);
 			$this->SetValueString("NaechsteTermine", $next);
 			$this->SetValueString("Kalender", $calDataTxt);
+			$this->SetValueBoolean("Urlaub", $urlaub);
+
+			
+//			$this->Logging("~~~~~~~~  Variable: calData  ~~~~~~~~");
+//			$this->Logging( print_r($calData, true) );
 		}
 	}
 
@@ -756,7 +819,6 @@ class IPSownCloud extends IPSModule{
 //
 /*****************************************************************/
 	private function SetEintrag($thisData, $tag){
-//	private function SetEintrag($thisData, $this->StyleText, $tag){
 
 		if($thisData['ZeitTxt'] == "00:00"){
 	        if($thisData['DatumTxt'] == $thisData['EndDatumTxt']) $thisData['ZeitTxt']="Ganzt&aumlgig";
@@ -848,6 +910,28 @@ class IPSownCloud extends IPSModule{
 		return $reminder;
 	}
 
+//**************************************************************************
+//
+//  Logging
+//
+//**************************************************************************    
+    private function Logging($Text){
+		if ( $this->ReadPropertyBoolean("Logging") == false )
+			return;
+		$ordner = IPS_GetLogDir() . "ownCloud";
+		if ( !is_dir ( $ordner ) )
+			mkdir($ordner);
+
+		if ( !is_dir ( $ordner ) )
+			return;
+
+		$time = date("d.m.Y H:i:s");
+		$logdatei = IPS_GetLogDir() . "ownCloud/ownCloud.log";
+		$datei = fopen($logdatei,"a+");
+		fwrite($datei, $time ." ". $Text . chr(13));
+		fclose($datei);
+	}
+
 /*****************************************************************/
 //
 //
@@ -855,8 +939,7 @@ class IPSownCloud extends IPSModule{
 //
 //
 /*****************************************************************/
-	private function seDay($begin,$end,$format,$sep)
-	{
+	private function seDay($begin,$end,$format,$sep){
 
 		$pos1	= strpos($format, 'd');
 		$pos2	= strpos($format, 'm');
@@ -882,8 +965,7 @@ class IPSownCloud extends IPSModule{
 // Rückgabe: 0 ist identisch, -1 ist A älter als B, 1 ist A jünger als B
 //
 /*****************************************************************/
-	private function DateCompare($a, $b)
-	{
+	private function DateCompare($a, $b){
 	    if ( $a['Datum'] == $b['Datum'] ) return 0;
 	    if ( $a['Datum'] < $b['Datum'] )  return -1;
 	    return 1;

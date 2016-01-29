@@ -1,317 +1,104 @@
 {
 	"elements":
 	[
-				{
-                    "type": "Label",
-                    "label": "ownCloud Konfiguration"
-                },
-                {
-                    "name": "URL",
-                    "type": "ValidationTextBox",
-                    "caption": "URL von ownCloud"
-                },
-                {
-                    "name": "KalenderID",
-                    "type": "ValidationTextBox",
-                    "caption": "Kalender ID"
-                },
-                {
-                    "name": "Username",
-                    "type": "ValidationTextBox",
-                    "caption": "Benutzer"
-                },
-                {
-                    "name": "Password",
-                    "type": "PasswordTextBox",
-                    "caption": "Passwort"
-                },
-                {
-                    "name": "Feiertage",
-                    "type": "Select",
-                    "caption": "Bundesland Feiertage",
-                    "options": [
-                        {
-                            "label": "Keine Feiertage",
-                            "value": "--"
-                        },
-                        {
-                            "label": "Baden-Württemberg",
-                            "value": "BW"
-                        },
-                        {
-                            "label": "Bayern",
-                            "value": "BY"
-                        },
-                        {
-                            "label": "Berlin",
-                            "value": "BE"
-                        },
-                        {
-                            "label": "Brandenburg",
-                            "value": "BB"
-                        },
-                        {
-                            "label": "Bremen",
-                            "value": "HB"
-                        },
-                        {
-                            "label": "Hamburg",
-                            "value": "HH"
-                        },
-                        {
-                            "label": "Hessen",
-                            "value": "HE"
-                        },
-                        {
-                            "label": "Mecklenburg-Vorpommern",
-                            "value": "MV"
-                        },
-                        {
-                            "label": "Niedersachsen",
-                            "value": "NI"
-                        },
-                        {
-                            "label": "Nordrhein-Westfalen",
-                            "value": "NW"
-                        },
-                        {
-                            "label": "Rheinland-Pfalz",
-                            "value": "RP"
-                        },
-                        {
-                            "label": "Saarland",
-                            "value": "SL"
-                        },
-                        {
-                            "label": "Sachsen",
-                            "value": "SN"
-                        },
-                        {
-                            "label": "Sachen-Anhalt",
-                            "value": "ST"
-                        },
-                        {
-                            "label": "Schleswig-Holstein",
-                            "value": "SH"
-                        },
-                        {
-                            "label": "Thüringen",
-                            "value": "TH"
-                        }
-                    ]
-                },
-                {
-                    "name": "MaxDays",
-                    "type": "ValidationTextBox",
-                    "caption": "Ansicht Tage"
-                },
-				{ 
-					"name": "visualoldtimes",
-					"type": "CheckBox", 
-					"caption": "Anzeige abgelaufener Termine für Heute" 
-				},
-				{ 
-					"name": "visualreminder",
-					"type": "CheckBox", 
-					"caption": "Anzeige der Erinnerungen" 
-				},
-				{ 	"name": "EmailID", 
-					"type": "SelectInstance",
-					"caption": "EmailID SMTP" 
-				},
-                {
-                    "name": "Style11",
-                    "type": "Select",
-                    "caption": "Text Datum",
-                    "options": [
-                        {
-                            "label": "Super klein",
-                            "value": "xx-small"
-                        },
-                        {
-                            "label": "Sehr klein",
-                            "value": "x-small"
-                        },
-                        {
-                            "label": "klein",
-                            "value": "small"
-                        },
-                        {
-                            "label": "Normal",
-                            "value": "normal"
-                        },
-                        {
-                            "label": "grösser",
-                            "value": "large"
-                        },
-                        {
-                            "label": "Sehr groß",
-                            "value": "x-large"
-                        },
-                        {
-                            "label": "Super groß",
-                            "value": "xx-large"
-                        }
-					]
-				},
-                {
-                    "name": "Style12",
-                    "type": "Select",
-                    "caption": "Text Wochentag",
-                    "options": [
-                        {
-                            "label": "Super klein",
-                            "value": "xx-small"
-                        },
-                        {
-                            "label": "Sehr klein",
-                            "value": "x-small"
-                        },
-                        {
-                            "label": "klein",
-                            "value": "small"
-                        },
-                        {
-                            "label": "Normal",
-                            "value": "normal"
-                        },
-                        {
-                            "label": "grösser",
-                            "value": "large"
-                        },
-                        {
-                            "label": "Sehr groß",
-                            "value": "x-large"
-                        },
-                        {
-                            "label": "Super groß",
-                            "value": "xx-large"
-                        }
-					]
-				},
-                {
-                    "name": "Style13",
-                    "type": "Select",
-                    "caption": "Text Eintrag",
-                    "options": [
-                        {
-                            "label": "Super klein",
-                            "value": "xx-small"
-                        },
-                        {
-                            "label": "Sehr klein",
-                            "value": "x-small"
-                        },
-                        {
-                            "label": "klein",
-                            "value": "small"
-                        },
-                        {
-                            "label": "Normal",
-                            "value": "normal"
-                        },
-                        {
-                            "label": "grösser",
-                            "value": "large"
-                        },
-                        {
-                            "label": "Sehr groß",
-                            "value": "x-large"
-                        },
-                        {
-                            "label": "Super groß",
-                            "value": "xx-large"
-                        }
-					]
-				},
-                {
-                    "name": "Style14",
-                    "type": "Select",
-                    "caption": "Text Heute",
-                    "options": [
-                        {
-                            "label": "Super klein",
-                            "value": "xx-small"
-                        },
-                        {
-                            "label": "Sehr klein",
-                            "value": "x-small"
-                        },
-                        {
-                            "label": "klein",
-                            "value": "small"
-                        },
-                        {
-                            "label": "Normal",
-                            "value": "normal"
-                        },
-                        {
-                            "label": "grösser",
-                            "value": "large"
-                        },
-                        {
-                            "label": "Sehr groß",
-                            "value": "x-large"
-                        },
-                        {
-                            "label": "Super groß",
-                            "value": "xx-large"
-                        }
-					]
-				},				
-				{ 
-					"name": "autoupdate",
-					"type": "CheckBox", 
-					"caption": "Modul bei neuer Version automatisch updaten" 
-				},
-				{ 
-					"name": "debug",
-					"type": "CheckBox", 
-					"caption": "Debug Ausgabe" 
-				}
+		{	"type": "Label"             ,	"label":  "####### ownCloud v1.14 #######" },
+		{	"type": "Label"				,	"label": "------- ownCloud Zugangsdaten -------" },		
+		{	"type": "ValidationTextBox"	,	"name" : "URL"			,	"caption": "URL von ownCloud"	},
+		{	"type": "NumberSpinner"		,	"name" : "KalenderID"	,	"caption": "Kalender ID", "digits": 0	},
+		{	"type": "ValidationTextBox"	,	"name" : "Username"		,	"caption": "Benutzer"	},
+		{	"type": "PasswordTextBox"	,	"name" : "Password"		,	"caption": "Passwort"	},
+
+		{	"type": "Label"				,	"label": "------- ownCloud Visualisierung -------" },		
+		{	"type": "Select"			,	"name" : "Feiertage"	,	"caption": "Bundesland Feiertage", "options": 
+			[
+				{	"value": "--"	, "label": "Keine Feiertage" },
+				{	"value": "BW"	, "label": "Baden-Württemberg" },
+				{	"value": "BY"	, "label": "Bayern" },
+				{	"value": "BE"	, "label": "Berlin" },
+				{	"value": "BB"	, "label": "Brandenburg" },
+				{	"value": "HB"	, "label": "Bremen" },
+				{	"value": "HH"	, "label": "Hamburg" },
+				{	"value": "HE"	, "label": "Hessen" },
+				{	"value": "MV"	, "label": "Mecklenburg-Vorpommern" },
+				{	"value": "NI"	, "label": "Niedersachsen" },
+				{	"value": "NW"	, "label": "Nordrhein-Westfalen" },
+				{	"value": "RP"	, "label": "Rheinland-Pfalz" },
+				{	"value": "SL"	, "label": "Saarland" },
+				{	"value": "SN"	, "label": "Sachsen" },
+				{	"value": "ST"	, "label": "Sachen-Anhalt" },
+				{	"value": "SH"	, "label": "Schleswig-Holstein" },
+				{	"value": "TH"	, "label": "Thüringen" }
+			]
+		},
+		{	"type": "ValidationTextBox"	,	"name": "MaxDays"		,	"caption": "Ansicht Tage"	},
+		{	"type": "CheckBox"			,	"name": "visualoldtimes",	"caption": "Anzeige abgelaufener Termine für Heute" },
+		{	"type": "CheckBox"			,	"name": "visualreminder",	"caption": "Anzeige der Erinnerungen" },
+		{ 	"type": "SelectInstance"	,	"name": "EmailID"		, 	"caption": "EmailID SMTP" },
+		{	"type": "Select"			,	"name": "Style11"		,	"caption": "Text Datum",	"options": 
+			[
+				{	"label": "Super klein",	"value": "xx-small"	},
+				{	"label": "Sehr klein",	"value": "x-small"  },
+				{	"label": "klein",		"value": "small"	},
+				{	"label": "Normal",		"value": "normal"	},
+				{	"label": "grösser",		"value": "large"	},
+				{	"label": "Sehr groß",	"value": "x-large"	},
+				{	"label": "Super groß",	"value": "xx-large"	}
+			]
+		},
+		{	"type": "Select"			,	"name": "Style12"		,	"caption": "Text Wochentag",	"options": 
+			[
+				{	"label": "Super klein",	"value": "xx-small"	},
+				{	"label": "Sehr klein",	"value": "x-small"	},
+				{	"label": "klein",		"value": "small"	},
+				{	"label": "Normal",		"value": "normal"	},
+				{	"label": "grösser",		"value": "large"	},
+				{	"label": "Sehr groß",	"value": "x-large"	},
+				{	"label": "Super groß",	"value": "xx-large"	}
+			]
+		},
+		{	"type": "Select"			,	"name": "Style13"		,	"caption": "Text Eintrag",	"options": 
+			[
+				{	"label": "Super klein",	"value": "xx-small"	},
+				{	"label": "Sehr klein",	"value": "x-small"	},
+				{	"label": "klein",		"value": "small"	},
+				{	"label": "Normal",		"value": "normal"	},
+				{	"label": "grösser",		"value": "large"	},
+				{	"label": "Sehr groß",	"value": "x-large"	},
+				{	"label": "Super groß",	"value": "xx-large"	}
+			]
+		},
+		{	"type": "Select"			,	"name": "Style14"		,	"caption": "Text Heute",	"options": 
+			[
+				{	"label": "Super klein",	"value": "xx-small"	},
+				{	"label": "Sehr klein",	"value": "x-small"	},
+				{	"label": "klein",		"value": "small"	},
+				{	"label": "Normal",		"value": "normal"	},
+				{	"label": "grösser",		"value": "large"	},
+				{	"label": "Sehr groß",	"value": "x-large"	},
+				{	"label": "Super groß",	"value": "xx-large"	}
+			]
+		},				
+		{	"type": "Label"				,	"label": "------- ownCloud Optionen -------" },		
+		{	"type": "CheckBox"			,	"name": "autoupdate"	,	"caption": "Modul bei neuer Version automatisch updaten"	},
+		{	"type": "CheckBox"			,	"name": "debug"			,	"caption": "Debug Ausgabe" },
+		{	"type": "CheckBox"          ,	"name": "Logging"		,	"caption": "Logging (../logs/ownCloud/ownCloud.log)" }
 	],
+
 	"actions":
 	[
-		{ "type": "Button", "label": "Update", "onClick": "OWN_Update($id);" }
-		,{ "type": "Button", "label": "ModulUpdate", "onClick": "OWN_ModulSelfUpdate($id);" }
+		{ 	"type": "Button"			,	"label": "Update"		,	"onClick": "OWN_Update($id);" },
+		{ 	"type": "Button"			,	"label": "ModulUpdate"	,	"onClick": "OWN_ModulSelfUpdate($id);" }
 	],
+	
 	"status":
 	[
-                {
-                    "code": 101,
-                    "icon": "inactive",
-                    "caption": "Konfiguration ungültig."
-                },
-                {
-                    "code": 102,
-                    "icon": "active",
-                    "caption": "Konfiguration gültig."
-                },
-                {
-                    "code": 201,
-                    "icon": "error",
-                    "caption": "Bitte URL eintragen. z.B. https://www.XXX.de/cloud"
-                },
-                {
-                    "code": 202,
-                    "icon": "error",
-                    "caption": "Bitte KalenderID des Exports eintragen. z.B. 8"
-                },
-                {
-                    "code": 203,
-                    "icon": "error",
-                    "caption": "Benutzer Namen eingeben"
-                },
-                {
-                    "code": 204,
-                    "icon": "error",
-                    "caption": "Bitte Password eingeben"
-                },
-                {
-                    "code": 205,
-                    "icon": "error",
-                    "caption": "Bitte in Anzahl Tagen eine Zahl eingeben"
-                }
+		{	"code": 101,	"icon": "inactive",	"caption": "Konfiguration ungültig."	},
+		{	"code": 102,	"icon": "active",	"caption": "Konfiguration gültig."	},
+		{	"code": 201,	"icon": "error",	"caption": "Bitte URL eintragen. z.B. https://www.XXX.de/cloud"	},
+		{	"code": 202,	"icon": "error",	"caption": "Bitte KalenderID des Exports eintragen. z.B. 8"	},
+		{	"code": 203,	"icon": "error",	"caption": "Benutzer Namen eingeben"	},
+		{	"code": 204,	"icon": "error",	"caption": "Bitte Password eingeben"	},
+		{	"code": 205,	"icon": "error",	"caption": "Bitte in Anzahl Tagen eine Zahl eingeben"	}
 	]
 
 }

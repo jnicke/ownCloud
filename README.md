@@ -31,13 +31,13 @@ Dieses Modul erzeugt eine Wecker Instance.
 	
 	OWN_Update( integer $InstanceID );
 
-	Startet eine neue Abfrage des Kalenders.
+		Startet eine neue Abfrage des Kalenders.
 	
 	OWN_ModulSelfUpdate(integer $InstanceID );
 	
-	Wenn eine neuere Version des Moduls vorliegt, wird diese geladen.
-	Diese Funktion kann auch automatisch bei jedem Kalender Update erfolgen.
-	Einstellbar über die Instanz.
+		Wenn eine neuere Version des Moduls vorliegt, wird diese geladen.
+		Diese Funktion kann auch automatisch bei jedem Kalender Update erfolgen.
+		Einstellbar über die Instanz.
 
 
 ## 5. Anhang
@@ -48,14 +48,24 @@ Dieses Modul erzeugt eine Wecker Instance.
 **Changelog:**  
  Version 1.0:
   - Erstes Release
- 
- Version 1.1:
+
+ Version 1.02:
+  - Neu: Bei Jährlichen Wiederholungen wird die Anzahl neben dem Termin angezeigt. Sind ja in der Regel Geburtstage
+  - Fix: kleinere Fehlerbereinigungen
+  
+ Version 1.13:
   - Neu: Modul kann sich automatisch selbst updaten.
   - Neu: Wenn neuere Version vorhanden ist und automatisches Update aus, wird ein Hinweis im HTML Kalender angezeigt.
-  - Neu: Wenn neuere Version vorhanden ist und automatisches Update aus, wird eine Variable auf true gesetzt.
+  - Neu: Wenn neuere Version vorhanden ist und automatisches Update aus, wird die Variable gesetzt.
   - Neu: Externes Script für Modifizierung des Titel, UserEvent und ReminderEvent.
   - Neu: Bei jährlichen Wiederholungen, wird die Anzahl der Wiederholungen hinter dem Termin angezeigt. (s. i. d. R. Geburtstage)
   - Neu: Variable nächster Termin jetzt mit Anzeige Datum und Uhrzeit
   - Fix: Variablen für Termine (ausser Kalender) werden auf ~TextBox gesetzt. Damit funktioniert auch der Zeilenumbruch
   - Fix: Wiederholungen täglich, wöchentlich, monatlich wurden nicht korrekt ausgewertet.
+
+ Version 1.14:
+  - Neu: Wenn ein heutiger Termin mit dem Wort "Urlaub" anfängt, wird die Variable "Heute Urlaub" auf gesetzt. Sonst auf gelöscht.
+  - Neu: Datei Logging kann aktiviert werden. 
+  - Fix: Für Terminerstellung durch Outlook Kalender. Durch Outlook erstellte Termine wurden nicht angezeigt.
+
   
