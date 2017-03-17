@@ -1080,7 +1080,7 @@ class IPSownCloud extends IPSModule{
 		// Fester $Feiertag in BY (nicht überall), SL
 		//*******************************************
 		if (($bland == "BY") or ($bland == "SL")) {
-				$days["Maria Himmelfahrt"] 	= mktime(0, 0, 0, 08, 15, $year); //!!!!!!!!!!!!!!!!!!!!!
+				$days["Maria Himmelfahrt"] 	= mktime(0, 0, 0, 8, 15, $year); //!!!!!!!!!!!!!!!!!!!!!
 		}
 
 		//**********************************************************************
