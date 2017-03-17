@@ -39,7 +39,7 @@ class IPSownCloud extends IPSModule{
 		parent::ApplyChanges();
 	
 		$url  	 =  $this->ReadPropertyString('URL');
-		$kid  	 =  $this->ReadPropertyString('KalenderID');
+		$kid  	 =  $this->ReadPropertyInteger('KalenderID');
 		$user 	 =  $this->ReadPropertyString('Username');
 		$pass 	 =  $this->ReadPropertyString('Password');
 		$maxdays =  $this->ReadPropertyInteger('MaxDays');
@@ -245,7 +245,7 @@ class IPSownCloud extends IPSModule{
 		$this->StyleText[30]  = $this->ReadPropertyBoolean('visualoldtimes');              // Sollen abgelaufene Termine von Heute angezeigt werden false = Termine nach Endzeit, werden nicht mehr angezeigt AB V1.07
 
 		$url     =  $this->ReadPropertyString('URL');
-		$kid     =  $this->ReadPropertyString('KalenderID');
+		$kid     =  $this->ReadPropertyInteger('KalenderID');
 		$user    =  $this->ReadPropertyString('Username');
 		$pass 	 =  $this->ReadPropertyString('Password');
 				
