@@ -202,9 +202,9 @@ class IPSownCloud extends IPSModule{
 					//IPS_LogMessage("ownCloud-Modul", "Eine neue Version ist verfügbar!");
 					//$this->Logging("Eine neue Version ist verfügbar!");
 					//$this->SetValueBoolean("NeuesUpdate", true);
-				}else {
+				//}else {
 					//$this->SetValueBoolean("NeuesUpdate", false);
-				}
+				//}
 			}
 		}
 		return $ret;
