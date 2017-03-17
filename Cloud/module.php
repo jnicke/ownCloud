@@ -28,6 +28,10 @@ class IPSownCloud extends IPSModule{
 		$this->RegisterPropertyBoolean("autoupdate", false);
 		$this->RegisterPropertyBoolean("debug", false);
 		$this->RegisterPropertyBoolean("Logging", false);
+		
+		// 1 Minuten Timer
+       	$this->RegisterTimer("Timer", 60*1000, 'OWN_Update($_IPS[\'TARGET\']);');
+
 	}
 
 /*****************************************************************/
@@ -127,9 +131,6 @@ class IPSownCloud extends IPSModule{
 	}
 ?>', 300);
 		IPS_SetHidden($this->GetIDForIdent('UserAktion'), true);
-
-		// 1 Minuten Timer
-       	$this->RegisterTimer("Timer", 60*1000, 'OWN_Update($_IPS[\'TARGET\']);');
 
 		// Nach übernahme der Einstellungen oder IPS-Neustart einmal Update durchführen.
 		$this->Update();
