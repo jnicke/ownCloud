@@ -196,14 +196,14 @@ class IPSownCloud extends IPSModule{
 			if (in_array($Modulname, $this->EigenerModulName) === true)
 			{
 				$ModulInfoAR = (@MC_GetModuleRepositoryInfo($ModulInstanzID, $Modulname));
-				if ($ModulInfoAR["ModuleLocalCommit"] <> $ModulInfoAR["ModuleRemoteCommit"])
-				{
-					$ret = "Eine neue Version ist verf&uumlgbar";
-					IPS_LogMessage("ownCloud-Modul", "Eine neue Version ist verfügbar!");
-					$this->Logging("Eine neue Version ist verfügbar!");
-					$this->SetValueBoolean("NeuesUpdate", true);
+				//if ($ModulInfoAR["ModuleLocalCommit"] <> $ModulInfoAR["ModuleRemoteCommit"])
+				//{
+					//$ret = "Eine neue Version ist verf&uumlgbar";
+					//IPS_LogMessage("ownCloud-Modul", "Eine neue Version ist verfügbar!");
+					//$this->Logging("Eine neue Version ist verfügbar!");
+					//$this->SetValueBoolean("NeuesUpdate", true);
 				}else {
-					$this->SetValueBoolean("NeuesUpdate", false);
+					//$this->SetValueBoolean("NeuesUpdate", false);
 				}
 			}
 		}
